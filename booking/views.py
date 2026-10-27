@@ -8,20 +8,22 @@ from .serializers import CurrentBookingSerializer
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction, IntegrityError
 
-# Create your views here.
+
+
+# Fetching the booked seats from the CurrentBookings model to display the available seats on UI
 @api_view(['GET'])
 def get_booked_seats(request):
-    # Fetching the booked seats from the CurrentBookings model
 
     bookedSeats = CurrentBookings.objects.all()
     bookedSerializer = CurrentBookingSerializer(bookedSeats, many=True)
     return Response(bookedSerializer.data, status = status.HTTP_200_OK)
 
 
+
+# Booking a seat the user has requested. The user must be authenticated for the seat
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def book_seat(request):
-    # Booking a seat the user has requested. The user must be authenticated for the seat
 
     table_no = request.data.get('table_no')
     seat_no = request.data.get('seat_no')
@@ -58,3 +60,30 @@ def book_seat(request):
         return Response({'error': 'Booking error occured. Either you already booked a seat or the seat was just booked.'}, status = status.HTTP_409_CONFLICT)
 
     return Response({'message': 'Seat booked successfully.'}, status = status.HTTP_201_CREATED)
+
+
+# Fetching the user's table and seat details
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ticket_details(request):
+    try:
+        ticket = CurrentBookings.objects.get(user = request.user)
+
+        return Response({"table_no": ticket.table_no,
+                         "seat_no": ticket.seat_no,
+                         "booked_at": ticket.booked_at}, status = status.HTTP_200_OK)
+    except CurrentBookings.DoesNotExist:
+        return Response({'error': 'No booking found.'}, status = status.HTTP_404_NOT_FOUND)
+
+
+# Cancel a ticket
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def cancel_ticket(request):
+    try:
+        ticket = CurrentBookings.objects.get(user = request.user)
+        ticket.delete()
+
+        return Response({'message': 'Seat got cancelled successfully.'}, status = status.HTTP_200_OK)
+    except CurrentBookings.DoesNotExist:
+        return Response({'error': 'No booking found to cancel.'}, status = status.HTTP_404_NOT_FOUND)

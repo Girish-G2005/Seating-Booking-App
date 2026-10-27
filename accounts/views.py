@@ -33,3 +33,4 @@ def register_user(request):
     user = User.objects.create_user(username = username, password = password, email = email)
 
     return Response({'message': 'User registered successfully.'}, status = status.HTTP_201_CREATED)
+
