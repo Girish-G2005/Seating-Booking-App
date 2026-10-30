@@ -2,21 +2,23 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .services import get_jarvis_response
+from .services import get_available_seat_count, get_jarvis_response
+from .intents import Intent, get_intent
 
-# Create your views here.
-
+# API endpoint to handle chat messages and return the detected intent
 @api_view(['POST'])
-@permission_classes(['IsAuthenticated'])
-def chat(response):
-    message = response.data.get("message", "").strip()
+@permission_classes([IsAuthenticated])
+def chat(request):
+    message = request.data.get('message', '')
 
     if not message:
-        return Response({'error': 'Message is required.'}, status = status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Message is required'}, status = status.HTTP_400_BAD_REQUEST)
 
-    try:
-        reply = get_jarvis_response(message)
-        return Response({'reply': reply}, status = status.HTTP_200_OK)
-    except Exception:
-        return Response({'error': 'Jarvis is temporarily unavaialable.'}, status = status.HTTP_503_SERVICE_UNAVAILABLE)
-    
+    intent = get_intent(message)
+
+    if intent == Intent.CHECK_AVAILABILITY:
+        available_seats = get_available_seat_count()
+
+        return Response({'reply': f"There are {available_seats} seats available."}, status = status.HTTP_200_OK)
+
+

@@ -1,4 +1,7 @@
 import ollama
+from booking.models import CurrentBookings
+from django.db import transaction, IntegrityError
+
 
 def get_jarvis_response(message):
 
@@ -8,13 +11,28 @@ def get_jarvis_response(message):
             {
                 "role": "system",
                 "content": (
-                    "You are Jarvis, a friendly seat-booking assistant. "
-                    "You help users check available seats, book a random "
-                    "available seat, and cancel their current booking. "
-                    "Keep replies short and friendly. "
-                    "For unrelated requests, politely explain your purpose. "
-                    "Never claim a booking or cancellation succeeded unless "
-                    "the backend confirms it."
+                    "You are Jarvis, a polite, friendly, and helpful seat-booking assistant. "
+
+                    "Your responsibilities are strictly limited to checking seat availability, "
+                    "booking a random available seat, and cancelling the user's current booking. "
+
+                    "Respond naturally to basic greetings and casual small talk. "
+                    "Always maintain a warm, respectful, and welcoming tone. "
+
+                    "If users ask unrelated questions or request things outside your capabilities, "
+                    "politely explain that you are designed specifically for seat-booking assistance. "
+                    "Never sound rude, dismissive, sarcastic, or annoyed. "
+
+                    "Keep responses short, natural, and conversational. "
+
+                    "IMPORTANT RULES: "
+                    "Never invent or guess the number of available or occupied seats. "
+                    "Only report seat availability using actual data provided by the backend. "
+                    "Never claim that a seat has been booked or a booking has been cancelled "
+                    "unless the backend explicitly confirms the operation. "
+                    "Never assume that an operation was successful. "
+                    "If backend information is unavailable, politely inform the user "
+                    "that you cannot verify the information at the moment. "
                 )
             },
             {
@@ -26,3 +44,14 @@ def get_jarvis_response(message):
     )
 
     return response.message.content
+
+
+# To get the available seat count
+TOTAL_SEATS = 36
+
+def get_available_seat_count():
+    booked_count = CurrentBookings.objects.count()
+    return TOTAL_SEATS - booked_count
+
+
+# To book a random seat
